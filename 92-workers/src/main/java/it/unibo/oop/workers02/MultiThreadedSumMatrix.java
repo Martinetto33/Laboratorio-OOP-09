@@ -3,33 +3,44 @@ package it.unibo.oop.workers02;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MultiThreadedSumMatrix implements SumMatrix {
+/**
+ * This class makes the sum of all the elements of a double matrix. It is a standard implementation
+ * that doesn't use complex language features.
+ */
+public final class MultiThreadedSumMatrix implements SumMatrix {
 
     private final int numberOfThreads;
 
+    /**
+     * Builds a new Worker that will be in charge of summing a reduced amount of values
+     * contained in the matrix.
+     * @param nthread
+     */
     public MultiThreadedSumMatrix(final int nthread) {
         this.numberOfThreads = nthread;
     }
 
     private static class Worker extends Thread {
 
-        private final List<Double> list;
+        private final double[][] matrix;
         private final int startpos;
         private final int nelem;
         private long res;
 
-        Worker(final List<Double> list, final int startpos, final int nelem) {
+        Worker(final double[][] matrix, final int startpos, final int nelem) {
             super();
-            this.list = list;
+            this.matrix = matrix;
             this.startpos = startpos;
             this.nelem = nelem;
         }
 
         @Override
         public void run() {
-            System.out.println("Working from position " + startpos + " to position " + (startpos + nelem - 1));
-            for (int i = startpos; i < list.size() && i < startpos + nelem; i++) {
-                this.res += this.list.get(i);
+            System.out.println("Working from position " + startpos + " to position " + (startpos + nelem - 1)); //NOPMD
+            for (int i = startpos; i < this.matrix.length && i < startpos + nelem; i++) {
+                for (final double elem : matrix[i]) {
+                    this.res += elem;
+                }
             }
         }
 
@@ -38,26 +49,15 @@ public class MultiThreadedSumMatrix implements SumMatrix {
         }
     }
 
-    private ArrayList<Double> flattenMatrix (double[][] matrix) {
-        ArrayList<Double> allValues = new ArrayList<>();
-        for(int i = 0; i < matrix.length; i++) {
-            for(int j = 0; j < matrix[i].length; j++) {
-                allValues.add(matrix[i][j]);
-            }
-        }
-        return allValues;
-    }
-
     @Override
-    public double sum(double[][] matrix) {
-        ArrayList<Double> allValues = flattenMatrix(matrix);
-        final int numberOfPieces = allValues.size() % numberOfThreads + allValues.size() / numberOfThreads;
+    public double sum(final double[][] matrix) {
+        final int numberOfPieces = matrix.length % numberOfThreads + matrix.length / numberOfThreads;
         /*
          * Build a list of workers
          */
         final List<Worker> workers = new ArrayList<>(numberOfThreads);
-        for (int start = 0; start < allValues.size(); start += numberOfPieces) {
-            workers.add(new Worker(allValues, start, numberOfPieces));
+        for (int start = 0; start < matrix.length; start += numberOfPieces) {
+            workers.add(new Worker(matrix, start, numberOfPieces));
         }
         for (final Worker w : workers) {
             w.start();
@@ -73,5 +73,4 @@ public class MultiThreadedSumMatrix implements SumMatrix {
         }
         return result;
     }
-    
 }
